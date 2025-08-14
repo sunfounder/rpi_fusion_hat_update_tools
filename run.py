@@ -3,41 +3,35 @@ import sys
 import time
 from i2c import I2C
 from ui_tools import UiTools
+from fusion_hat_globals import *
 
 # change working directory to script directory
 file_path = os.path.abspath(__file__)
 file_dir = os.path.dirname(file_path)
 os.chdir(file_dir)
 
-#
-FIRMWARE_MAX_BYTES = 24*1024 # 24K
+
 firmware_files = []
-for root, dirs, files in os.walk("."):
+FIRMWARE_DIR = "firmware"
+for root, dirs, files in os.walk(FIRMWARE_DIR):
+    print(root, dirs, files)
     for file in files:
         if file.endswith(".bin"):
-            firmware_files.append(os.path.join(root, file))
+            full_path = os.path.join(root, file)
+            relative_path = os.path.relpath(full_path, FIRMWARE_DIR)
+            firmware_files.append(relative_path)
 firmware_num = len(firmware_files)
 chosen_firmware_index = 0
 
-# 
-APP_I2C_ADDR = 0x5c
-BOOT_I2C_ADDR = 0x5d
+# print("Firmware files:")
+# for i in range(firmware_num):
+#     print(f"{i}: {firmware_files[i]}")
+# exit()
 
 app_i2c = I2C(addr=APP_I2C_ADDR, bus=1)
 boot_i2c = I2C(addr=BOOT_I2C_ADDR, bus=1)
 
-APP_VERSION_REG_ADDR = 128 # 128: major, 129: minor, 130, patch                                                                     |
-BOOT_VERSION_REG_ADDR = 173 # 173: major, 174: minor, 175, patch
-FACTORY_VERSION_REG_ADDR = 176 # 176: major, 177: minor, 178, patch
-APP_ENTRY_REG_ADDR = 179 # 179~182 (32bit)     
-MIAN_ENTRY_REG_ADDR = 183 # 183~186 (32bit)
 
-BOOT_VERSION_REG_ADDR_BOOT = 0
-FACTORY_VERSION_REG_ADDR_BOOT = 3
-APP_VERSION_REG_ADDR_BOOT = 6
-BOOT_MODE_BOOT = 9
-APP_ENTRY_REG_ADDR_BOOT = 10
-MIAN_ENTRY_REG_ADDR_BOOT = 14
 # =============================================================
 # Enter boot mode
 # | start | cmd | value | end |
@@ -56,11 +50,6 @@ ADV_CMD_ERR = 0xEF
 ADV_CMD_RST = 0x00
 ADV_CMD_ENTER_BOOT = 0x04
 
-FACTORY_APP_MODE = 0
-NEW_APP_MODE = 1
-UPDATE_MODE = 2
-
-NEW_APP_START = 0x08008000
 # =============================================================
 # IAP
 # -------------
@@ -171,18 +160,11 @@ def get_main_entry():
     else:
         return None
     
-    result = result[3] << 24 | result[2] << 16 | result[1] << 8 | result[0]
-    return f'0x{result:08X}'
-
-def get_app_entry():
-    if app_i2c.is_ready():
-        result =  app_i2c._read_block_data(APP_ENTRY_REG_ADDR, 4)
-    elif boot_i2c.is_ready():
-        result =  boot_i2c._read_block_data(APP_ENTRY_REG_ADDR_BOOT, 4)
+    _is_big = True
+    if _is_big:
+        result = result[0] << 24 | result[1] << 16 | result[2] << 8 | result[3]
     else:
-        return None
-    
-    result = result[3] << 24 | result[2] << 16 | result[1] << 8 | result[0]
+        result = result[3] << 24 | result[2] << 16 | result[1] << 8 | result[0]
     return f'0x{result:08X}'
 
 def enter_boot_mode():
@@ -406,17 +388,16 @@ def get_basic_info():
     boot_version = get_boot_verion()
     app_version = get_app_verion()
     factory_version = get_factory_verion()
-    app_entry = get_app_entry()
     main_entry = get_main_entry()
 
 def display_basic_info(location=(UI_WIDTH-24, 8)):
     ui.draw(f"Boot Version: {boot_version}", location=location)
     ui.draw(f"App Version: {app_version}", location=(location[0], location[1]+1))
     ui.draw(f"Factory Version: {factory_version}", location=(location[0], location[1]+2))
-    ui.draw(f"App Entry: {app_entry}", location=(location[0], location[1]+3))
     ui.draw(f"Main Entry: {main_entry}", location=(location[0], location[1]+4))
 
 # -----------------------------------------------------------------
+TITLE = "I2C IAP for Fusion HAT+"
 OPERATIONS = [
     " Update Firmware",
     " Restore Factory Firmware",
@@ -432,7 +413,7 @@ def select_operation_handler():
     # clear screen
     print(f"{ui.home}{ui.THEME_BGROUND_COLOR}{ui.clear}")
     # draw title
-    ui.draw_title("I2C IAP for Pipower5")
+    ui.draw_title(TITLE)
     # draw options tips
     ui.draw(OPTIONS_TIPS['content'], location=OPTIONS_TIPS['location'])
     # draw basic info
@@ -512,7 +493,7 @@ def select_firmware_handler():
     if firmware_num > 0:
         _files  = firmware_files[options_offset:options_offset+OPTIONS_LIST_NUM]
         ui.draw_options(_files, chosen_firmware_index-options_offset, location=(2, 2), box_width=35)
-        ui.draw(f"{chosen_firmware_index+1}/{firmware_num}", location=(38, 2), box_width=7, align='right')
+        ui.draw(f"{chosen_firmware_index+1}/{firmware_num}", location=(45, 2), box_width=7, align='right')
     else:
         ui.draw("  No firmware found.", location=(5, 3))
         key = ui.inkey()
@@ -540,7 +521,7 @@ def select_firmware_handler():
             options_offset = chosen_firmware_index
             _files  = firmware_files[options_offset:options_offset+OPTIONS_LIST_NUM]
         ui.draw_options(_files, chosen_firmware_index-options_offset, location=(2, 2), box_width=35)
-        ui.draw(f"{chosen_firmware_index+1}/{firmware_num}", location=(38, 2), box_width=7, align='right')
+        ui.draw(f"{chosen_firmware_index+1}/{firmware_num}", location=(45, 2), box_width=7, align='right')
 
 #
 def burn_firmware_handler(file_path):
