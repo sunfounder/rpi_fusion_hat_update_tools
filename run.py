@@ -398,11 +398,11 @@ def display_basic_info(location=(UI_WIDTH-24, 9)):
 
 def display_currnet_mode(location=(UI_WIDTH-24, 7)):
     if boot_i2c.is_ready():
-        ui.draw(f"Current Mode: boot", color=ui.white_on_green, location=location)
+        ui.draw(f" Current Mode: Boot ", color=ui.white_on_green, location=location)
     elif app_i2c.is_ready():
-        ui.draw(f"Current Mode: app", color=ui.white_on_green, location=location)
+        ui.draw(f" Current Mode: App ", color=ui.white_on_green, location=location)
     else:
-        ui.draw(f"Current Mode: unknown", color=ui.white_on_red, location=location)
+        ui.draw(f" Disconnected ", color=ui.white_on_red, location=location)
 
 # -----------------------------------------------------------------
 TITLE = "I2C IAP for Fusion HAT+"
@@ -699,7 +699,6 @@ def burn_firmware_handler(file_path):
 
 def update_mdoe_handler():
     is_boot_mode = check_boot_mode()
-    print(f'is_boot_mode')
     if not is_boot_mode:
         status = enter_boot_mode_handler()
         if not status:
