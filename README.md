@@ -1,2 +1,2 @@
-# pipower5_update_tools
-I2C IAP tools for PiPower5
+# rpi_fusion_hat_update_tools
+Firmware update tools for Fusion HAT+
