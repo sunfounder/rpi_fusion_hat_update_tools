@@ -4,6 +4,7 @@ import time
 from i2c import I2C
 from ui_tools import UiTools
 from fusion_hat_globals import *
+import traceback
 
 # change working directory to script directory
 file_path = os.path.abspath(__file__)
@@ -14,7 +15,7 @@ os.chdir(file_dir)
 firmware_files = []
 FIRMWARE_DIR = "firmware"
 for root, dirs, files in os.walk(FIRMWARE_DIR):
-    print(root, dirs, files)
+    # print(root, dirs, files)
     for file in files:
         if file.endswith(".bin"):
             full_path = os.path.join(root, file)
@@ -238,7 +239,6 @@ def earse_flash(file_size):
     for x in page_num:
         check_sum ^= x
 
-
     _send_data = [IAP_CMD_START, IAP_CMD_EARSE, check_sum, _len] + addr + page_num + [IAP_CMD_END]
 
     for _ in range(IAP_RETRY_TIMES):
@@ -390,11 +390,19 @@ def get_basic_info():
     factory_version = get_factory_verion()
     main_entry = get_main_entry()
 
-def display_basic_info(location=(UI_WIDTH-24, 8)):
+def display_basic_info(location=(UI_WIDTH-24, 9)):
     ui.draw(f"Boot Version: {boot_version}", location=location)
     ui.draw(f"App Version: {app_version}", location=(location[0], location[1]+1))
     ui.draw(f"Factory Version: {factory_version}", location=(location[0], location[1]+2))
-    ui.draw(f"Main Entry: {main_entry}", location=(location[0], location[1]+4))
+    ui.draw(f"Main Entry: {main_entry}", location=(location[0], location[1]+3))
+
+def display_currnet_mode(location=(UI_WIDTH-24, 7)):
+    if boot_i2c.is_ready():
+        ui.draw(f"Current Mode: boot", color=ui.white_on_green, location=location)
+    elif app_i2c.is_ready():
+        ui.draw(f"Current Mode: app", color=ui.white_on_green, location=location)
+    else:
+        ui.draw(f"Current Mode: unknown", color=ui.white_on_red, location=location)
 
 # -----------------------------------------------------------------
 TITLE = "I2C IAP for Fusion HAT+"
@@ -416,8 +424,10 @@ def select_operation_handler():
     ui.draw_title(TITLE)
     # draw options tips
     ui.draw(OPTIONS_TIPS['content'], location=OPTIONS_TIPS['location'])
+    # draw current mode
+    display_currnet_mode(location=(UI_WIDTH-24, 7))
     # draw basic info
-    display_basic_info(location=(UI_WIDTH-24, 8))
+    display_basic_info(location=(UI_WIDTH-24, 9))
 
     # draw options
     ui.draw_options(OPERATIONS, operation, location=(2, 2), box_width=35)
@@ -486,8 +496,10 @@ def select_firmware_handler():
     ui.draw_title("select firmware")
     # draw options tips
     ui.draw(OPTIONS_TIPS['content'], location=OPTIONS_TIPS['location'])
+    # draw current mode
+    display_currnet_mode(location=(UI_WIDTH-24, 7))
     # draw basic info
-    display_basic_info(location=(UI_WIDTH-24, 8))
+    display_basic_info(location=(UI_WIDTH-24, 9))
 
     # draw options
     if firmware_num > 0:
@@ -507,7 +519,7 @@ def select_firmware_handler():
             chosen_firmware_index = (chosen_firmware_index + 1) % firmware_num
         elif key.name == 'KEY_ENTER':
             chosen_file = firmware_files[chosen_firmware_index]
-            return chosen_file
+            return f"{FIRMWARE_DIR}/{chosen_file}"
         elif key.name == 'KEY_ESCAPE':
             exit()
         else:
@@ -530,10 +542,12 @@ def burn_firmware_handler(file_path):
     # draw title
     ui.draw_title("burn firmware")
     #
-    ui.draw(f"firmware: {file_path}", location=(2, 2))
-    # check file
     file_size = os.path.getsize(file_path)
-    ui.draw(f"    size: {file_size} bytes", location=(2, 3))
+    # 
+    _file_str = [f"firmware: {file_path}", ]
+    _file_str += [f"size: {file_size} bytes"]
+    ui.draw(_file_str, location=(2, 2), box_width=50)
+    # check file
     if file_size > FIRMWARE_MAX_BYTES:
         ui.draw([
                 "",
@@ -541,7 +555,7 @@ def burn_firmware_handler(file_path):
                 "",
                 " press any key to exit. "
                 ],
-                color=ui.THEME_CHOSEN_COLOR,
+                color=ui.black_on_yellow,
                 location=(15, 5),
                 box_width=50,
                 align='center'
@@ -549,8 +563,10 @@ def burn_firmware_handler(file_path):
         ui.inkey()
         return
 
+    # draw current mode
+    display_currnet_mode(location=(UI_WIDTH-24, 7))
     # display basic info
-    display_basic_info(location=(UI_WIDTH-24, 8))
+    display_basic_info(location=(UI_WIDTH-24, 9))
 
     # burn firmware
     # ----------------------------------------------------------------------------
@@ -683,6 +699,7 @@ def burn_firmware_handler(file_path):
 
 def update_mdoe_handler():
     is_boot_mode = check_boot_mode()
+    print(f'is_boot_mode')
     if not is_boot_mode:
         status = enter_boot_mode_handler()
         if not status:
@@ -779,11 +796,26 @@ def loop():
                 reset_device_handller()
 
 def main():
+    track_str = ""
     with ui.fullscreen(), ui.cbreak():
         try:
             loop()
         except KeyboardInterrupt:
             pass
+        except Exception as e:
+            track_str = traceback.format_exc()
+            ui.draw( [
+                f"error: {e}",
+                # f"{traceback.format_exc()}",
+                "",
+                " press any key to exit. "
+                ],
+                color=ui.white_on_red,
+                location=(5, 5),
+                box_width=70,
+                align='left'
+                )
+            ui.inkey()
         finally:
             if boot_i2c.is_ready():
                 opt = ui.draw_ask([
@@ -798,6 +830,7 @@ def main():
                 )
                 if opt is True:
                     reset_device_handller()
+    print(track_str)
 
 if __name__ == "__main__":
     main()

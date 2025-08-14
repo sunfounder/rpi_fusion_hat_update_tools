@@ -16,41 +16,62 @@ class UiTools(Terminal):
         self._height = height
 
         if (self.width <  self._width) or (self.height < self._height):
-            print("Terminal size is too small")
+            print("Terminal window is too small, please enlarge the window.")
             print(f"Terminal size: {self.width}x{self.height}")
             print(f"Required size: { self._width}x{self._height}")
             exit()
+
+    def split_str_by_len(self, text, length):
+        return [text[i:i+length] for i in range(0, len(text), length)]
 
     def draw_title(self, title):
         sapce = " "*int(self._width/2-len(title)/2)
         title = sapce + title + sapce
         print(self.home() + self.THEME_CHOSEN_COLOR(f'{title}'))
 
-    def draw(self, content, color=None, location=None, align='left', box_width=None):
+    def draw(self, content, color=None, location=None, align='left', box_width=None, margin=1):
+        #
         if color is None:
             color = self.THEME_COLOR
+        #
         if location is None:
             _x, _y = self.get_location()
         else:
             _x, _y = location
-        
+        #
         if not isinstance(content, list):
             content = [content]
+        #
+        if box_width is None:
+            box_width = 0
+            for _line in content:
+                if len(_line) > box_width:
+                    box_width = len(_line)
+            box_width += margin*2
+            if box_width > self._width:
+                box_width = self._width
 
-        for i, line in enumerate(content):
-            print(self.move_xy(_x, _y+i), end='')
-            if box_width is None or len(line) >= box_width:
-                print(color(f'{line}'), end='', flush=True)
+        max_len = box_width - margin*2
+
+        new_content = []
+        for line in content:
+            if len(line) > max_len:
+                _strs = self.split_str_by_len(line, max_len)
+                new_content.extend(_strs)
             else:
-                if align == 'left':
-                    space = " "*(box_width-len(line))
-                    print(color(f'{line}{space}'), end='', flush=True)
-                elif align == 'right':
-                    space = " "*(box_width-len(line))
-                    print(color(f'{space}{line}'), end='', flush=True)
-                elif align == 'center':
-                    space = " "*int((box_width-len(line))/2)
-                    print(color(f'{space}{line}{space}'), end='', flush=True)
+                new_content.append(line)
+
+        for i, line in enumerate(new_content):
+            print(self.move_xy(_x, _y+i), end='')
+            if align == 'left':
+                space = " "*(box_width-len(line))
+                print(color(f'{line}{space}'), end='', flush=True)
+            elif align == 'right':
+                space = " "*(box_width-len(line))
+                print(color(f'{space}{line}'), end='', flush=True)
+            elif align == 'center':
+                space = " "*int((box_width-len(line))/2)
+                print(color(f'{space}{line}{space}'), end='', flush=True)
 
     def draw_options(self, 
                     content,
