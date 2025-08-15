@@ -232,7 +232,7 @@ def earse_flash(file_size):
     else:
         return False
 
-def burn_data(data, data_offset):
+def burn_data(ui_obj, data, data_offset):
     # | start | cmd | checksum | len  | data_offset    | data | end |
     # | ----- | --- | -------- | ---- | -------------- | ---- | --- |
     # | 0     | 1   | 2        | 3    | 4~5（u16,Big） | 6... | -1  |
@@ -256,13 +256,13 @@ def burn_data(data, data_offset):
         check_sum ^= x
 
     _send_data = [IAP_CMD_START, IAP_CMD_WRITE, check_sum, _len] + data_offset + data + [IAP_CMD_END]
-    ui.clear_xline(ui._height)
-    ui.clear_xline(ui._height+1)
+    ui_obj.clear_xline(ui_obj._height)
+    ui_obj.clear_xline(ui_obj._height+1)
     _send_data_hex = ""
     for x in _send_data:
         _send_data_hex += f"{x:02X}, "
     _send_data_hex = _send_data_hex[:-2]
-    ui.draw(f"send_data: {_send_data_hex}", location=(0, ui._height))
+    ui_obj.draw(f"send_data: {_send_data_hex}", location=(0, ui_obj._height))
 
     status = IAP_NACK_ERR 
     for _ in range(IAP_RETRY_TIMES):

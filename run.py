@@ -293,7 +293,7 @@ def burn_firmware_handler(file_path):
         else:
             send_data = data[data_offset:data_offset+IAP_DATA_LEN]
         #
-        _status = burn_data(send_data, data_offset)
+        _status = burn_data(ui, send_data, data_offset)
         if _status == IAP_OK:
             data_offset += IAP_DATA_LEN
             if data_offset > data_len:
