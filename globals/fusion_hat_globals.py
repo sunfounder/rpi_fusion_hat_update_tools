@@ -34,6 +34,5 @@ Fusion_HAT_Globals = {
 }
 
 CONFLICT_SERVICES = [
-    "pipower5.service",
-    "pironman5.service",
+    "rpi_fusion_hat_update_tools.service",
 ]
