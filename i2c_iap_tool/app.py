@@ -58,12 +58,6 @@ RESTORE_MODE = 1
 RESET_MODE = 2
 
 # -----------------------------------------------------------------
-CONFLICT_SERVICES = [
-    "pipower5.service",
-    "pironman5.service",
-]
-
-
 def is_service_active(service_name):
     try:
         result = subprocess.run(
@@ -98,8 +92,9 @@ def stop_service(service_name):
 
 # -----------------------------------------------------------------
 class IapToolApp:
-    def __init__(self, globals):
+    def __init__(self, globals, conflict_services=None):
         self.globals = globals
+        self.conflict_services = conflict_services
         self.ui = UiTools(width=UI_WIDTH, height=UI_HEIGHT)
         self.iap = Iap(self.globals)
 
@@ -494,7 +489,9 @@ class IapToolApp:
 
     def check_conflict_service_hanlder(self):
         _active_conflict_service = []
-        for _service in CONFLICT_SERVICES:
+        if not self.conflict_services:
+            return
+        for _service in self.conflict_services:
             if is_service_active(_service):
                 _active_conflict_service.append(_service)
         if len(_active_conflict_service) > 0:

@@ -32,3 +32,8 @@ Fusion_HAT_Globals = {
     # Firmware configuration
     "FIRMWARE_MAX_BYTES": 24 * 1024,  # 24K
 }
+
+CONFLICT_SERVICES = [
+    "pipower5.service",
+    "pironman5.service",
+]
