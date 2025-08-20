@@ -1,5 +1,9 @@
 Fusion_HAT_Globals = {
     # Global variables
+    # NAME
+    "NAME": "Fusion HAT+",
+
+    # I2C addresses
     "APP_I2C_ADDR": 0x17,
     "BOOT_I2C_ADDR": 0x5d,
 
