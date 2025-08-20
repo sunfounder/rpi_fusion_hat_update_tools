@@ -2,7 +2,7 @@
 Firmware update tools for Fusion HAT+
 
 <p>
- <img src="./UI_SHOW.png" width=100%>
+ <img src="./UI_SHOW.png" width=80%>
 </p>
 
 ## Install depencies
