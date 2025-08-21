@@ -28,9 +28,6 @@ firmware_num = len(firmware_files)
 #     print(f"{i}: {firmware_files[i]}")
 # exit()
 
-
-
-
 UI_WIDTH = 80
 UI_HEIGHT = 15
 
@@ -121,11 +118,11 @@ class IapToolApp:
 
     def display_currnet_mode(self, location=(UI_WIDTH-24, 7)):
         if self.iap.boot_i2c.is_ready():
-            self.ui.draw(f" Current Mode: Boot ", color=self.ui.white_on_green, location=location)
+            self.ui.draw(f" Current Mode: Boot ", color=self.ui.black_on_green, location=location)
         elif self.iap.app_i2c.is_ready():
-            self.ui.draw(f" Current Mode: App ", color=self.ui.white_on_green, location=location)
+            self.ui.draw(f" Current Mode: App ", color=self.ui.black_on_green, location=location)
         else:
-            self.ui.draw(f" Disconnected ", color=self.ui.white_on_red, location=location)
+            self.ui.draw(f" Disconnected ", color=self.ui.black_on_red, location=location)
         
     def select_operation_handler(self):
         operation = 0
@@ -189,7 +186,7 @@ class IapToolApp:
                     "",
                     "press any key to exit.  "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -264,6 +261,19 @@ class IapToolApp:
         _file_str += [f"size: {file_size} bytes"]
         self.ui.draw(_file_str, location=(2, 2), box_width=50)
         # check file
+        if file_size < 1000:
+            self.ui.draw([
+                    f"error: file size is too small, please check the file. ",
+                    f"file_size: {file_size} bytes",
+                    " press any key to exit. "
+                    ],
+                    color=self.ui.black_on_yellow,
+                    location=(15, 5),
+                    box_width=50,
+                    align='center'
+            )
+            self.ui.inkey()
+            return
         if file_size > self.globals["FIRMWARE_MAX_BYTES"]:
             self.ui.draw([
                     "",
@@ -309,10 +319,10 @@ class IapToolApp:
         is_ok = False
 
         # ---- erasing ----
-        self.ui.draw(f"erasing ...", location=(0, self.ui._height-1))
+        self.ui.draw(f"erasing ...", location=(0, self.ui._height-2))
         _status = self.iap.earse_flash(data_len)
         if _status is True:
-            self.ui.draw(f"OK", location=(14, self.ui._height-1), color=self.ui.green)
+            self.ui.draw(f"OK", location=(14, self.ui._height-2), color=self.ui.green)
             time.sleep(1)
         else:
             self.ui.draw([
@@ -320,7 +330,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -329,9 +339,9 @@ class IapToolApp:
             return
 
         # ---- burning ----
-        self.ui.draw(f"burning: ", location=(0, self.ui._height-1))
-        self.ui.draw_progress_bar(progress_perc, location=(9, self.ui._height-1), box_width=25)
-        self.ui.draw(f"{data_offset}/{data_len} ", location=(42, self.ui._height-1))
+        self.ui.draw(f"burning: ", location=(0, self.ui._height-2))
+        self.ui.draw_progress_bar(progress_perc, location=(9, self.ui._height-2), box_width=25)
+        self.ui.draw(f"{data_offset}/{data_len} ", location=(42, self.ui._height-2))
 
         while True:
             if data_offset > data_len - IAP_DATA_LEN:
@@ -351,24 +361,27 @@ class IapToolApp:
             progress_perc = int((data_offset)*100/data_len)
             if progress_perc > 100:
                 progress_perc = 100
-            self.ui.draw_progress_bar(progress_perc, location=(9, self.ui._height-1), box_width=25)
-            self.ui.draw(f"{data_offset}/{data_len} ", location=(42, self.ui._height-1))
+            self.ui.draw_progress_bar(progress_perc, location=(9, self.ui._height-2), box_width=25)
+            self.ui.draw(f"{data_offset}/{data_len} ", location=(42, self.ui._height-2))
 
             #
             if progress_perc == 100:
                 is_ok = True
+                self.ui.clear_xline(self.ui._height-1)
+                self.ui.clear_xline(self.ui._height)
                 break
             #
             time.sleep(0.01)
 
         if is_ok:
             # ---- verify ----
-            self.ui.draw(f"{' '*self.ui._width}", location=(0, self.ui._height-1))
-            self.ui.draw(f"verifying ...", location=(0, self.ui._height-1))
+            self.ui.draw(f"{' '*self.ui._width}", location=(0, self.ui._height-2))
+            self.ui.draw(f"verifying ...", location=(0, self.ui._height-2))
+
             _status = self.iap.verify_data(data)
             if _status is True:
                 is_ok = True
-                self.ui.draw(f"OK", location=(14, self.ui._height-1), color=self.ui.green)
+                self.ui.draw(f"OK", location=(14, self.ui._height-2), color=self.ui.green)
             else:
                 is_ok = False
                 self.ui.draw([
@@ -376,7 +389,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -390,7 +403,7 @@ class IapToolApp:
                     "",
                     " Would you like to reboot the device? [y/n] "
                     ],
-                    color=self.ui.white_on_green,
+                    color=self.ui.black_on_green,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -405,7 +418,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -438,7 +451,7 @@ class IapToolApp:
                     "",
                     " Would you like to reboot the device? [y/n] "
                     ],
-                    color=self.ui.white_on_green,
+                    color=self.ui.black_on_green,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -453,7 +466,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -469,7 +482,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_green,
+                    color=self.ui.black_on_green,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -480,7 +493,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -521,7 +534,7 @@ class IapToolApp:
                     "Do you want to close them? [y/n]",
                     "",
                     ],
-                    color=self.ui.white_on_yellow,
+                    color=self.ui.black_on_yellow,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -533,7 +546,7 @@ class IapToolApp:
                     "",
                     "",
                     ],
-                    color=self.ui.white_on_yellow,
+                    color=self.ui.black_on_yellow,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -551,7 +564,7 @@ class IapToolApp:
                         "",
                         " press any key to exit. "
                         ],
-                        color=self.ui.white_on_red,
+                        color=self.ui.black_on_red,
                         location=(15, 5),
                         box_width=50,
                         align='center'
@@ -589,7 +602,7 @@ class IapToolApp:
                     f"Would you like to reboot the device? [y/n]",
                     "",
                     ],
-                    color=self.ui.white_on_green,
+                    color=self.ui.black_on_green,
                     location=(15, 5),
                     box_width=50,
                     align='center'
@@ -612,7 +625,7 @@ class IapToolApp:
                     "",
                     " press any key to exit. "
                     ],
-                    color=self.ui.white_on_red,
+                    color=self.ui.black_on_red,
                     location=(5, 5),
                     box_width=70,
                     align='left'
@@ -625,7 +638,7 @@ class IapToolApp:
                         f"to exit boot mode? [y/n]",
                         "",
                         ],
-                        color=self.ui.white_on_green,
+                        color=self.ui.black_on_green,
                         location=(15, 5),
                         box_width=50,
                         align='center'

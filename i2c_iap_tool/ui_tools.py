@@ -165,4 +165,4 @@ class UiTools(Terminal):
 
     def clear_xline(self, line):
         with self.location():
-            print(self.move_xy(0, line) + self.clear_line, end='')
+            print(self.move_xy(0, line) + ' '*self.width, end='', flush=True)
